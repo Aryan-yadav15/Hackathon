@@ -313,6 +313,16 @@ export const orderProcessingWorkflow = {
   ]
 };
 
+export const retailerGroupWorkflow = {
+  // Define your default workflow structure here
+  nodes: [
+    // Your nodes
+  ],
+  edges: [
+    // Your edges
+  ]
+}
+
 export default function DemoWorkflow({ onLoad }) {
   return (
     <Card className="shadow-lg">

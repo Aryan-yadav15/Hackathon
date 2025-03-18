@@ -51,6 +51,21 @@ const nodeTypes = [
   }
 ]
 
+// Define which node types are essential (simple) for form view
+const essentialNodeTypes = ['email', 'product', 'exception', 'invoice'];
+
+// Filter the nodeTypes array to only include essential nodes
+const formViewNodeTypes = nodeTypes.filter(node => 
+  essentialNodeTypes.includes(node.type)
+);
+
+// Add this function to check if workflow contains advanced nodes
+const hasAdvancedNodes = (workflowNodes) => {
+  return workflowNodes.some(node => 
+    !essentialNodeTypes.includes(node.data?.type)
+  );
+}
+
 export default function FormView({ nodes, onSave, onAddNode, onSaveWorkflow }) {
   const [selectedNode, setSelectedNode] = useState(null)
   const [newNodeType, setNewNodeType] = useState('')
@@ -104,6 +119,37 @@ export default function FormView({ nodes, onSave, onAddNode, onSaveWorkflow }) {
     }
   }
 
+  // Add this to the beginning of the component, after defining state
+  const advancedNodes = nodes.filter(node => 
+    !essentialNodeTypes.includes(node.data?.type)
+  );
+
+  // Then in the nodes list JSX section, after displaying the essential nodes:
+  {advancedNodes.length > 0 && (
+    <div className="mt-6">
+      <h3 className="text-sm font-medium text-gray-500 mb-2">Advanced Nodes (Canvas View Only)</h3>
+      <div className="space-y-2">
+        {advancedNodes.map(node => (
+          <div key={node.id} className="flex items-center p-3 border border-gray-200 bg-gray-50 rounded-md opacity-70">
+            <div className="mr-3">
+              {getNodeIcon(node.data.type)}
+            </div>
+            <div>
+              <p className="text-sm font-medium">{node.data.label}</p>
+              <p className="text-xs text-gray-500">This node can only be edited in Canvas View</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )}
+
+  // Add this helper function to get the appropriate icon
+  const getNodeIcon = (type) => {
+    const nodeType = nodeTypes.find(nt => nt.type === type);
+    return nodeType ? nodeType.icon : null;
+  };
+
   return (
     <div className="flex h-full">
       {/* Left Sidebar - Steps */}
@@ -121,19 +167,15 @@ export default function FormView({ nodes, onSave, onAddNode, onSaveWorkflow }) {
               value={newNodeType}
               onValueChange={setNewNodeType}
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Add new step" />
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select node type" />
               </SelectTrigger>
               <SelectContent>
-                {nodeTypes.map((type) => (
-                  <SelectItem 
-                    key={type.type} 
-                    value={type.type}
-                    disabled={nodes.some(n => n.data.type === type.type)}
-                  >
+                {formViewNodeTypes.map((nodeType) => (
+                  <SelectItem key={nodeType.type} value={nodeType.type}>
                     <div className="flex items-center gap-2">
-                      {type.icon}
-                      <span>{type.label}</span>
+                      {nodeType.icon}
+                      <span>{nodeType.label}</span>
                     </div>
                   </SelectItem>
                 ))}
@@ -208,6 +250,28 @@ export default function FormView({ nodes, onSave, onAddNode, onSaveWorkflow }) {
 
       {/* Main Content - Configuration Form */}
       <div className="flex-1 p-8 bg-gray-50 overflow-y-auto">
+        {hasAdvancedNodes(nodes) && (
+          <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4 rounded">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-blue-700">
+                  This workflow contains advanced nodes that can only be edited in Canvas View. 
+                  <button 
+                    className="font-medium underline ml-1"
+                    onClick={() => window.location.search = '?view=canvas'}
+                  >
+                    Switch to Canvas View
+                  </button>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         {selectedNode ? (
           <div className="max-w-2xl mx-auto">
             <div className="bg-white rounded-lg shadow-sm p-6">

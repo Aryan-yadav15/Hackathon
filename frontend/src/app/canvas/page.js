@@ -93,6 +93,14 @@ export default function Page() {
   const [isSaving, setIsSaving] = useState(false);
   const [isFormView, setIsFormView] = useState(false);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [viewMode, setViewMode] = useState(() => {
+    // Check URL for view parameter or use 'form' as default
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('view') || 'form';
+    }
+    return 'form';
+  });
 
   // 3. Callback hooks
   const onNodesChange = useCallback((changes) => {
@@ -296,6 +304,13 @@ export default function Page() {
       loadWorkflow();
     }
   }, [user]);
+
+  useEffect(() => {
+    const url = new URL(window.location);
+    url.searchParams.set('view', viewMode);
+    window.history.pushState({}, '', url);
+  }, [viewMode]);
+
   const validateAndSaveWorkflow = async () => {
     setIsSaving(true);
     try {
@@ -390,9 +405,9 @@ export default function Page() {
             data: {
               ...node.data,
               ...configData,
+              productCount: configData.productCount,
               configured: true,
               label: configData.label || node.data.label,
-              productCount: configData.products?.length || 0,
               ruleCount: configData.exceptions?.length || 0
             },
           };
@@ -477,6 +492,39 @@ export default function Page() {
     }, 50);
   };
 
+  const handleViewToggle = (checked) => {
+    setViewMode(checked ? 'canvas' : 'form');
+  };
+
+  // Add this function to handle node creation from form view
+  const addNewNodeFromForm = (nodeData) => {
+    const newNode = {
+      id: `node_${Date.now()}`,
+      type: 'customNode',
+      position: getNextNodePosition(),
+      data: {
+        ...nodeData,
+        label: nodeData.label || getDefaultLabelForType(nodeData.type)
+      }
+    };
+    
+    setNodes(nds => [...nds, newNode]);
+    return newNode.id;
+  };
+
+  // Helper to position new nodes in a reasonable layout
+  const getNextNodePosition = () => {
+    // Simple logic: place new nodes in a column, spaced vertically
+    const existingNodes = nodes.length;
+    return { x: 100, y: 100 + (existingNodes * 150) };
+  };
+
+  // Helper to get default labels for node types
+  const getDefaultLabelForType = (type) => {
+    const nodeTypeInfo = sidebarNodeTypes.find(nt => nt.type === type);
+    return nodeTypeInfo ? nodeTypeInfo.label : 'New Node';
+  };
+
   if (!isLoaded || isLoadingManufacturer) {
     return <div>Loading...</div>;
   }
@@ -512,14 +560,14 @@ export default function Page() {
 
           {/* Center - View Toggle */}
           <div className="flex items-center space-x-3">
-            <span className={`text-sm ${!isFormView ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>Canvas</span>
+            <span className={`text-sm ${viewMode !== 'canvas' ? 'text-gray-500' : 'font-medium'}`}>Form</span>
             <Switch
               id="view-mode"
-              checked={isFormView}
-              onCheckedChange={() => setIsFormView(!isFormView)}
+              checked={viewMode === 'canvas'}
+              onCheckedChange={handleViewToggle}
               className="data-[state=checked]:bg-blue-600"
             />
-            <span className={`text-sm ${isFormView ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>Form</span>
+            <span className={`text-sm ${viewMode === 'canvas' ? 'text-gray-500' : 'font-medium'}`}>Canvas</span>
           </div>
 
           {/* Right side */}
@@ -553,14 +601,7 @@ export default function Page() {
             </svg>
           </div>
 
-          {isFormView ? (
-            <FormView 
-              nodes={nodes} 
-              onSave={handleConfigSave}
-              onAddNode={handleAddNode}
-              onSaveWorkflow={validateAndSaveWorkflow}
-            />
-          ) : (
+          {viewMode === 'canvas' ? (
             <div 
               className="h-full w-full relative" 
               ref={canvasWrapperRef}
@@ -623,6 +664,13 @@ export default function Page() {
                 </Panel>
               </ReactFlow>
             </div>
+          ) : (
+            <FormView 
+              nodes={nodes}
+              onSave={handleConfigSave}
+              onAddNode={addNewNodeFromForm}
+              onSaveWorkflow={validateAndSaveWorkflow}
+            />
           )}
         </div>
         

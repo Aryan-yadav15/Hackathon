@@ -52,6 +52,34 @@ export default function WorkflowNode({ data, isConnectable, selected, style }) {
     return iconMap[type] || null;
   };
 
+  const handleConfigClick = () => {
+    if (data.type === 'product') {
+      // Initialize with existing products data if available
+      console.log('Opening modal with node data:', data);
+    }
+    // ...other node types
+  };
+
+  const handleSaveConfig = (configData) => {
+    console.log('Saving config data:', configData);
+    
+    // Store the complete data including products array when available
+    onConfigUpdate({
+      ...data,
+      ...configData,
+      configured: true
+    });
+    
+    setModalOpen(false);
+  };
+
+  const getProductCount = () => {
+    if (data.productCount) return data.productCount;
+    if (data.productIds && Array.isArray(data.productIds)) return data.productIds.length;
+    if (data.products && Array.isArray(data.products)) return data.products.length;
+    return 0;
+  };
+
   return (
     <div
       className={`
@@ -83,6 +111,13 @@ export default function WorkflowNode({ data, isConnectable, selected, style }) {
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
             </svg>
             <span>Configured</span>
+          </div>
+        )}
+
+        {data.type === 'product' && data.configured && (
+          <div className="flex items-center gap-1 mt-1 text-gray-700 dark:text-gray-300">
+            <FaBox className="w-3 h-3" />
+            <span>Products: {getProductCount()}</span>
           </div>
         )}
       </div>

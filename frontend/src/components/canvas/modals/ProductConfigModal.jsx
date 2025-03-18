@@ -28,32 +28,56 @@ export default function ProductConfigModal({ isOpen, onClose, onSave, initialDat
   // Fetch existing products for this manufacturer
   useEffect(() => {
     const fetchProducts = async () => {
-      if (!manufacturer?.id) return
+      if (!manufacturer?.id) return;
       
-      setLoading(true)
+      setLoading(true);
       try {
+        // If we have product IDs in initialData, load those specific products
+        if (initialData?.productIds?.length > 0) {
+          console.log('Loading specific products from IDs:', initialData.productIds);
+          
+          // Create a comma separated list of IDs
+          const idString = initialData.productIds.join(',');
+          const response = await fetch(`/api/products?ids=${idString}`);
+          
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to load products by IDs');
+          }
+          
+          const productsData = await response.json();
+          setProductConfig(prev => ({
+            ...prev,
+            products: productsData || []
+          }));
+          
+          return;
+        }
+        
+        // Otherwise load all products for this manufacturer
         const { data, error } = await supabase
           .from('products')
           .select('*')
           .eq('manufacturer_id', manufacturer.id)
-          .order('name')
-
-        if (error) throw error
+          .order('name');
+        
+        if (error) throw error;
+        
         setProductConfig(prev => ({
           ...prev,
           products: data
-        }))
+        }));
       } catch (err) {
-        setError(err.message)
+        setError(err.message);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-
+    };
+    
     if (isOpen && manufacturer?.id) {
-      fetchProducts()
+      fetchProducts();
     }
-  }, [isOpen, manufacturer?.id])
+  }, [isOpen, manufacturer?.id, initialData?.productIds]);
 
   // Update config when manufacturer changes
   useEffect(() => {
@@ -65,29 +89,31 @@ export default function ProductConfigModal({ isOpen, onClose, onSave, initialDat
     }
   }, [manufacturer])
 
-  const handleAddProduct = () => {
-    if (!newProduct.name || !newProduct.sku) return
+  const handleAddProduct = async () => {
+    try {
+      if (!newProduct.name || !newProduct.sku) return
+      
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          ...newProduct,
+          manufacturer_id: manufacturer.id,
+          price: parseFloat(newProduct.price)
+        })
+      });
 
-    const updatedProducts = [
-      ...productConfig.products,
-      {
-        id: crypto.randomUUID(),
-        name: newProduct.name,
-        sku: newProduct.sku,
-        price: parseFloat(newProduct.price) || 0
-      }
-    ]
-
-    setProductConfig(prev => ({
-      ...prev,
-      products: updatedProducts
-    }))
-
-    setNewProduct({
-      name: '',
-      sku: '',
-      price: ''
-    })
+      if (!response.ok) throw new Error('Failed to save product');
+      
+      const savedProduct = await response.json();
+      
+      const updatedProducts = [...productConfig.products, savedProduct];
+      setProductConfig(prev => ({...prev, products: updatedProducts}));
+      
+    } catch (error) {
+      console.error('Product save failed:', error);
+      setError(error.message);
+    }
   }
 
   const handleRemoveProduct = (productId) => {
@@ -102,16 +128,35 @@ export default function ProductConfigModal({ isOpen, onClose, onSave, initialDat
   }
 
   const handleSubmit = () => {
+    // Debug log
+    console.log('Products in config:', productConfig.products);
+    
+    const productIds = productConfig.products.map(product => {
+      // Same logic as in ProductConfigForm
+      if (typeof product.id === 'string') {
+        const matches = product.id.match(/\d+/);
+        if (matches && matches[0]) {
+          return parseInt(matches[0], 10);
+        }
+        if (!isNaN(product.id)) {
+          return parseInt(product.id, 10);
+        }
+      }
+      return product.id;
+    });
+    
+    console.log('Processed productIds:', productIds);
+    
     onSave({
-      ...productConfig,
+      productIds,
       configured: true,
       type: 'product',
       label: 'Product Configuration',
       productCount: productConfig.products.length
-    })
+    });
     
     if (!isFormView) {
-      onClose()
+      onClose();
     }
   }
 

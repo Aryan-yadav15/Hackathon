@@ -19,7 +19,7 @@ import Sidebar from "./Sidebar"
 import { FaEnvelope, FaBox, FaExclamationTriangle, FaFileInvoiceDollar, FaCodeBranch, FaPercentage, FaBell } from 'react-icons/fa'
 import { CheckCircle2, Trash2 } from 'lucide-react'
 import WorkflowGuide from './WorkflowGuide'
-import DemoWorkflow, { retailerGroupWorkflow } from './DemoWorkflow'
+import DemoWorkflow, { someOtherExport as retailerGroupWorkflow } from './DemoWorkflow'
 import CustomNode from './CustomNode'
 import WorkflowNode from './WorkflowNode'
 import FlowEdge from './FlowEdge'

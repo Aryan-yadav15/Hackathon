@@ -74,6 +74,60 @@ export async function GET(request) {
   }
 }
 
+// Helper function to clean node data
+const cleanNodeData = (node) => {
+  // Log the raw node data first
+  console.log('Cleaning node data:', node);
+  
+  if (node.type === 'product' && node.data) {
+    console.log('Processing product node data:', node.data);
+    
+    // If we have productIds property
+    if (node.data.productIds) {
+      console.log('Original productIds:', node.data.productIds);
+      
+      // Process each product ID
+      node.data.productIds = node.data.productIds.map(id => {
+        // If it's a string that contains letters (like "product-123")
+        if (typeof id === 'string' && id.match(/[a-zA-Z]/)) {
+          // Try to extract just the numeric part
+          const matches = id.match(/\d+/);
+          if (matches && matches[0]) {
+            console.log(`Converting ${id} to ${parseInt(matches[0], 10)}`);
+            return parseInt(matches[0], 10);
+          }
+        }
+        
+        // If it's already a numeric string, convert to number
+        if (typeof id === 'string' && !isNaN(id)) {
+          console.log(`Converting string ${id} to number ${parseInt(id, 10)}`);
+          return parseInt(id, 10);
+        }
+        
+        // If it's already a number, keep it
+        if (typeof id === 'number') {
+          return id;
+        }
+        
+        // If all else fails, log the unexpected ID format
+        console.warn('Unexpected ID format:', id);
+        return null;
+      })
+      .filter(id => id !== null); // Remove any null IDs
+      
+      console.log('Processed productIds:', node.data.productIds);
+    }
+    
+    // Remove any full product objects if they exist (we only want IDs)
+    if (node.data.products) {
+      console.log('Removing full products array');
+      delete node.data.products;
+    }
+  }
+  
+  return node;
+};
+
 export async function POST(request) {
   try {
     const { userId } = await auth()
@@ -111,7 +165,16 @@ export async function POST(request) {
     }
 
     const { workflow_nodes, workflow_edges, is_valid } = await request.json()
-    console.log('Received workflow data:', { workflow_nodes, workflow_edges, is_valid })
+    console.log('Received workflow data:', { 
+      nodes_count: workflow_nodes.length,
+      edges_count: workflow_edges.length,
+      is_valid
+    })
+    
+    // Log sample node for debugging
+    if (workflow_nodes.length > 0) {
+      console.log('Sample node data:', workflow_nodes[0]);
+    }
 
     // Delete existing workflow if any
     const { data: existingWorkflow } = await supabase
@@ -137,13 +200,20 @@ export async function POST(request) {
         .eq('id', existingWorkflow.id)
     }
 
-    // Create new workflow
+    // Clean all node data before saving
+    const cleanedNodes = workflow_nodes.map(cleanNodeData);
+    
+    // When inserting into the database, log the exact insert data
+    console.log('About to insert workflow with nodes:', cleanedNodes);
+    
+    // Use the cleaned nodes for database operations
     const { data: workflow, error: workflowError } = await supabase
       .from('workflows')
       .insert({
         manufacturer_id: manufacturer.id,
         name: 'Default Workflow',
-        is_active: true
+        is_active: true,
+        nodes: cleanedNodes
       })
       .select()
       .single()
@@ -158,15 +228,7 @@ export async function POST(request) {
     if (workflow_nodes && workflow_nodes.length > 0) {
       const { data: nodes, error: nodesError } = await supabase
         .from('workflow_nodes')
-        .insert(
-          workflow_nodes.map(node => ({
-            workflow_id: workflow.id,
-            type: node.type,
-            position_x: Math.round(node.position_x),
-            position_y: Math.round(node.position_y),
-            config: node.config
-          }))
-        )
+        .insert(cleanedNodes)
         .select()
 
       if (nodesError) throw nodesError

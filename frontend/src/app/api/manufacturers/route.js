@@ -1,5 +1,6 @@
 import { currentUser } from "@clerk/nextjs/server"
 import { createClient } from '@supabase/supabase-js'
+import { auth } from '@clerk/nextjs/server'
 
 // Create Supabase client inside the API route
 const supabase = createClient(
@@ -32,21 +33,21 @@ export async function GET() {
 }
 
 export async function POST(request) {
-  try {
-    const user = await currentUser();
-    
-    if (!user) {
-      console.log('Auth failed on POST:', { user: !!user });
-      return Response.json({ error: 'Unauthorized', details: 'No user found' }, { status: 401 });
-    }
+  const { userId } = auth()
+  
+  if (!userId) {
+    console.log('Auth failed on POST:', { user: !!userId });
+    return Response.json({ error: 'Unauthorized', details: 'No user found' }, { status: 401 });
+  }
 
+  try {
     const body = await request.json();
 
     // Check if manufacturer already exists
     const { data: existingManufacturer } = await supabase
       .from('manufacturers')
       .select('id')
-      .eq('clerk_id', user.id)
+      .eq('clerk_id', userId)
       .single();
 
     if (existingManufacturer) {
@@ -57,9 +58,9 @@ export async function POST(request) {
     const { data: manufacturer, error } = await supabase
       .from('manufacturers')
       .insert([{
-        clerk_id: user.id,
-        company_name: body.company_name || user.username,
-        email: user.emailAddresses[0].emailAddress,
+        clerk_id: userId,
+        company_name: body.company_name || userId,
+        email: userId + '@example.com',
         is_active: true
       }])
       .select()
