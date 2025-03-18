@@ -3,14 +3,14 @@ import cors from "cors";
 import dotenv from "dotenv";
 import manufacturersRouter from "./api/routes/manufacturers.js";
 import retailersRouter from "./api/routes/retailers.js";
-import productsRouter from "./api/routes/products.js";
+// import productsRouter from "./api/routes/products.js"; // Removed
 import ordersRouter from "./api/routes/orders.js";
 import orderItemsRouter from "./api/routes/orderItems.js";
-import uipathRouter from "./api/routes/uipath.js";
-import logsRouter from "./api/routes/logs.js";
-import invoicesRouter from "./api/routes/invoices.js";
-import notificationsRouter from "./api/routes/notifications.js";
-import validationRouter from "./api/routes/validation.js";
+// import uipathRouter from "./api/routes/uipath.js"; // Removed
+// import logsRouter from "./api/routes/logs.js"; // Removed
+// import invoicesRouter from "./api/routes/invoices.js"; // Removed
+// import notificationsRouter from "./api/routes/notifications.js"; // Removed
+// import validationRouter from "./api/routes/validation.js"; // Removed
 import testRouter from "./api/routes/test.js";
 import { verifyEmailConfig } from "./services/emailService.js";
 
@@ -64,6 +64,11 @@ app.get('/', (req, res) => {
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: "Something broke!" });
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
 
 export default app;
