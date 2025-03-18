@@ -72,7 +72,12 @@ export default function EmailConfigModal({ isOpen, onClose, onSave, initialData,
 
   const handleVerifyEmail = () => {
     setIsVerifying(true)
-    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(process.env.NEXT_PUBLIC_OAUTH_REDIRECT_URI)}&response_type=code&scope=https://mail.google.com/&access_type=offline&prompt=consent&state=${emailConfig.email}`
+    
+    // Use the current site URL instead of hardcoded localhost
+    const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+    const redirectUri = currentOrigin + '/api/oauth2callback';
+    
+    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=https://mail.google.com/&access_type=offline&prompt=consent&state=${emailConfig.email}`
   }
 
   const handleSubmit = async () => {
