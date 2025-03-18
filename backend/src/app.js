@@ -45,15 +45,15 @@ app.get("/api/health", (req, res) => {
 // Routes
 app.use("/api/manufacturers", manufacturersRouter);
 app.use("/api/retailers", retailersRouter);
-app.use("/api/products", productsRouter);
+// app.use("/api/products", productsRouter);  // Remove
 app.use("/api/orders", ordersRouter);
 app.use("/api/order-items", orderItemsRouter);
-app.use("/api/uipath", uipathRouter);
-app.use("/api/logs", logsRouter);
-app.use("/api/invoices", invoicesRouter);
-app.use("/api/notifications", notificationsRouter);
-app.use("/api/validation", validationRouter);
-app.use('/api/test', testRouter);
+// app.use("/api/uipath", uipathRouter);      // Remove
+// app.use("/api/logs", logsRouter);          // Remove 
+// app.use("/api/invoices", invoicesRouter);  // Remove
+// app.use("/api/notifications", notificationsRouter); // Remove
+// app.use("/api/validation", validationRouter);       // Remove
+app.use('/api/test', testRouter);  // Keep this as it's in use
 
 // Root route
 app.get('/', (req, res) => {
