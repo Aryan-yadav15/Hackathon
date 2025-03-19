@@ -209,7 +209,9 @@ export default function FormView({ nodes, onSave, onAddNode, onSaveWorkflow }) {
                         : node.data.type === 'exception'
                         ? `Rules: ${node.data.ruleCount || 0}`
                         : 'Configured'
-                      : 'Not configured'}
+                      : node.data.type === 'email'
+                        ? ''
+                        : 'Click to configure'}
                   </p>
                 </div>
                 {node.data.configured && (

@@ -298,9 +298,9 @@ export default function Home() {
 
   // Stats data
   const stats = [
-    { number: "500+", label: "Manufacturers Connected" },
-    { number: "1M+", label: "Orders Processed" },
-    { number: "10x", label: "Faster Processing" }
+    { number: "95%", label: "Automated Processing" },
+    { number: "32K+", label: "Orders Monthly" },
+    { number: "99.9%", label: "Accuracy Rate" }
   ];
 
   // Features data
@@ -467,7 +467,7 @@ export default function Home() {
       {/* Stats Section */}
       <section className="py-24 px-6 bg-gradient-to-b from-white to-indigo-50">
         <div className="container mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
             {stats.map((stat, index) => (
               <motion.div 
                 key={index}
@@ -475,14 +475,44 @@ export default function Home() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1, duration: 0.5 }}
                 viewport={{ once: true }}
-                className="flex flex-col items-center justify-center p-8 rounded-xl bg-white shadow-sm hover:shadow-md transition-shadow border border-gray-100"
+                className="flex flex-col items-center justify-center p-10 rounded-2xl bg-white shadow-sm hover:shadow-lg transition-all border border-gray-100 group"
               >
-                <span className="text-5xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">
+                <span className="text-6xl font-bold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 group-hover:from-purple-600 group-hover:to-indigo-600 transition-all">
                   {stat.number}
                 </span>
-                <span className="text-gray-600">{stat.label}</span>
+                <span className="text-gray-600 text-lg">{stat.label}</span>
               </motion.div>
             ))}
+          </div>
+          
+          <div className="flex flex-col md:flex-row justify-center gap-6 items-center">
+            <Link href="/retailers/register">
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="relative group"
+              >
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-green-400 to-blue-500 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-200"></div>
+                <Button className="relative h-14 px-8 rounded-full flex items-center bg-gradient-to-r from-green-500 to-blue-600 text-white border-0 text-lg font-medium">
+                  <Users className="h-5 w-5 mr-3" />
+                  Register as Retailer
+                </Button>
+              </motion.div>
+            </Link>
+            
+            <Link href="/canvas">
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="relative group"
+              >
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-400 to-purple-500 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-200"></div>
+                <Button className="relative h-14 px-8 rounded-full flex items-center bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-0 text-lg font-medium">
+                  <Sparkles className="h-5 w-5 mr-3" />
+                  Start Manufacturing
+                </Button>
+              </motion.div>
+            </Link>
           </div>
         </div>
       </section>
