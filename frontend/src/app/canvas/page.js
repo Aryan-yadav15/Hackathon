@@ -263,9 +263,13 @@ export default function Page() {
         const data = await response.json();
   
         if (data.workflow_nodes && data.workflow_nodes.length > 0) {
-          const loadedNodes = data.workflow_nodes.map(node => {
+          // Create a new array of nodes with proper structure
+          const loadedNodes = [];
+          
+          // Process each node individually to avoid temporal dead zone issues
+          for (const node of data.workflow_nodes) {
             console.log("Loading node:", node); // Debug log
-            return {
+            loadedNodes.push({
               id: node.id.toString(),
               type: 'customNode',
               position: { 
@@ -278,21 +282,25 @@ export default function Page() {
                 configured: node.config.configured || false,
                 ...node.config // Spread the rest of the config
               }
-            };
-          });
+            });
+          }
+          
           console.log("Loaded nodes:", loadedNodes); // Debug log
           setNodes(loadedNodes);
         }
   
         if (data.workflow_edges && data.workflow_edges.length > 0) {
-          setEdges(
-            data.workflow_edges.map(edge => ({
+          // Use a traditional for loop instead of map to avoid potential initialization issues
+          const loadedEdges = [];
+          for (const edge of data.workflow_edges) {
+            loadedEdges.push({
               id: edge.id.toString(),
               source: edge.source_node_id.toString(),
               target: edge.target_node_id.toString(),
               type: 'smoothstep'
-            }))
-          );
+            });
+          }
+          setEdges(loadedEdges);
         }
       } catch (error) {
         console.error('Failed to load workflow:', error);
