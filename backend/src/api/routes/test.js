@@ -199,18 +199,7 @@ async function processOrder(req, res) {
 
     console.log('Final response with fixed quantities:', finalResponse);
 
-    // Look up retailer by email
-    const { data: retailer, error: retailerError } = await supabase
-      .from('retailers')
-      .select('id')
-      .eq('email', emailMetadata.from)
-      .single();
-      
-    if (retailerError || !retailer) {
-      throw new Error(`Retailer not found: ${retailerError?.message || 'No retailer with email ' + emailMetadata.from}`);
-    }
-    
-    // Look up manufacturer by email
+    // First, look up manufacturer by email to get its ID
     const { data: manufacturer, error: manufacturerError } = await supabase
       .from('manufacturers')
       .select('id')
@@ -221,6 +210,18 @@ async function processOrder(req, res) {
       throw new Error(`Manufacturer not found: ${manufacturerError?.message || 'No manufacturer with email ' + emailMetadata.to}`);
     }
 
+    // Then look up retailer by both email and manufacturer_id
+    const { data: retailer, error: retailerError } = await supabase
+      .from('retailers')
+      .select('id')
+      .ilike('email', emailMetadata.from.trim())
+      .eq('manufacturer_id', manufacturer.id)
+      .single();
+      
+    if (retailerError || !retailer) {
+      throw new Error(`Retailer not found: ${retailerError?.message || 'No retailer with email ' + emailMetadata.from}`);
+    }
+    
     // Process order items and calculate total
     const processedProducts = new Set();
     const productEntries = Object.entries(finalResponse.orderDetails.products);

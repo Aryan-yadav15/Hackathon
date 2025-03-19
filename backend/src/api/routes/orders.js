@@ -57,12 +57,13 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Retailer lookup
-    console.log(`🔍 Looking up retailer with email: ${emailMetadata.from}`);
+    // Retailer lookup - now includes manufacturer_id
+    console.log(`🔍 Looking up retailer with email: ${emailMetadata.from} and manufacturer ID: ${manufacturer.id}`);
     const { data: retailer, error: rError } = await supabase
       .from('retailers')
       .select('id')
-      .eq('email', emailMetadata.from)
+      .ilike('email', emailMetadata.from.trim())
+      .eq('manufacturer_id', manufacturer.id)
       .single();
 
     console.log('Retailer lookup result:', { retailer, rError });

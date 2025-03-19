@@ -4,14 +4,29 @@ import { v4 as uuidv4 } from 'uuid';
 export async function createOrder(parsedData) {
     const { emailMetadata, orderDetails } = parsedData;
 
-    // Extract retailer email
+    // Extract retailer email and manufacturer email
     const retailerEmail = emailMetadata.from;
+    const manufacturerEmail = emailMetadata.to;
 
-    // Find the retailer by email, case-insensitive
+    // First find the manufacturer by email
+    const { data: manufacturerData, error: manufacturerError } = await supabase
+        .from('manufacturers')
+        .select('id')
+        .eq('email', manufacturerEmail)
+        .single();
+
+    if (manufacturerError) {
+        throw new Error(`Manufacturer not found: ${manufacturerError.message}`);
+    }
+
+    const manufacturerId = manufacturerData.id;
+
+    // Find the retailer by email and manufacturer_id
     const { data: retailerData, error: retailerError } = await supabase
         .from('retailers')
         .select('id, manufacturer_id')
         .ilike('email', retailerEmail.trim())
+        .eq('manufacturer_id', manufacturerId)
         .single();
 
     if (retailerError) {
@@ -19,7 +34,6 @@ export async function createOrder(parsedData) {
     }
 
     const retailerId = retailerData.id;
-    const manufacturerId = retailerData.manufacturer_id;
 
     // Create a new order number
     const orderNumber = `ORD-${Date.now().toString().slice(-6)}`;
