@@ -1,8 +1,9 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
-export default function RegistrationError() {
+function ErrorContent() {
     const searchParams = useSearchParams();
     const reason = searchParams.get('reason');
     const status = searchParams.get('status');
@@ -22,5 +23,13 @@ export default function RegistrationError() {
             
             <p className="text-sm text-gray-600 mt-8">Please try again or contact support if the issue persists.</p>
         </div>
+    );
+}
+
+export default function RegistrationError() {
+    return (
+        <Suspense fallback={<div className="text-center p-8">Loading...</div>}>
+            <ErrorContent />
+        </Suspense>
     );
 } 

@@ -1,8 +1,9 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
-export default function RegistrationSuccess() {
+function SuccessContent() {
     const searchParams = useSearchParams();
     const authStatus = searchParams.get('authStatus');
     
@@ -17,5 +18,13 @@ export default function RegistrationSuccess() {
             )}
             <p className="text-sm text-gray-600 mt-8">You can now close this window and return to the main application.</p>
         </div>
+    );
+}
+
+export default function RegistrationSuccess() {
+    return (
+        <Suspense fallback={<div className="text-center p-8">Loading...</div>}>
+            <SuccessContent />
+        </Suspense>
     );
 } 

@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 
 // Force response to be proper Next.js response
 export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
 
 // Debug Supabase connection
 console.log('SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
