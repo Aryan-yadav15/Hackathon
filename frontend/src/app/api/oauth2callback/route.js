@@ -5,83 +5,79 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const code = searchParams.get("code");
-    const email = searchParams.get("state");
+    const state = searchParams.get("state");
 
-    console.log("Received callback with:", { email, hasCode: !!code });
+    console.log("Received callback with:", { state, hasCode: !!code });
 
     if (!code) {
       console.error("No code received in callback");
-      return NextResponse.redirect(
-        new URL("/manufacturer/registration/error", request.url)
-      );
+      return NextResponse.redirect(new URL("/manufacturer/registration/error", request.nextUrl.origin));
     }
 
-    // Add token exchange
+    // Construct the token exchange request body
+    const tokenRequestBody = new URLSearchParams({
+      code,
+      client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET,
+      redirect_uri: process.env.NEXT_PUBLIC_OAUTH_REDIRECT_URI,
+      grant_type: "authorization_code",
+    });
+
+    // Token exchange
     const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        code,
-        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-        client_secret: process.env.GOOGLE_CLIENT_SECRET,
-        redirect_uri: process.env.NEXT_PUBLIC_OAUTH_REDIRECT_URI,
-        grant_type: "authorization_code",
-      }),
+      body: tokenRequestBody,
     });
 
-    // Log the full response for debugging
     const responseText = await tokenResponse.text();
     console.log("Token exchange response:", responseText);
 
     if (!tokenResponse.ok) {
       console.error("Token exchange failed:", responseText);
-      throw new Error(`Failed to exchange code for tokens: ${responseText}`);
+      return NextResponse.redirect(new URL("/manufacturer/registration/error", request.nextUrl.origin));
     }
 
     const tokens = JSON.parse(responseText);
 
-    // Validate token response
     if (!tokens.access_token || !tokens.refresh_token) {
       console.error("Invalid token response:", tokens);
-      throw new Error("Invalid token response - missing required tokens");
+      return NextResponse.redirect(new URL("/manufacturer/registration/error", request.nextUrl.origin));
     }
 
-    // Store actual tokens with better error handling
-    const { data: insertedData, error: supabaseError } = await supabase
-      .from("oauth_tokens")
-      .upsert(
-        [
-          {
-            email,
-            access_token: tokens.access_token,
-            refresh_token: tokens.refresh_token,
-            token_type: tokens.token_type,
-            scope: tokens.scope,
-            expires_in: tokens.expires_in,
-          },
-        ],
-        {
-          onConflict: "email",
-          returning: "minimal",
-        }
-      );
-
-    if (supabaseError) {
-      console.error("Supabase storage error:", supabaseError);
-      throw supabaseError;
+    // Assuming 'state' contains the email (as per your original code's intent)
+    if (!state) {
+      console.error("No state (email) received in callback");
+      return NextResponse.redirect(new URL("/manufacturer/registration/error", request.nextUrl.origin));
     }
 
-    return NextResponse.redirect(
-      new URL("/manufacturer/registration/complete", request.url)
-    );
+    const { data, error } = await supabase.from('manufacturers')
+      .update({
+        google_access_token: tokens.access_token,
+        google_refresh_token: tokens.refresh_token,
+      })
+      .eq('email', state)
+      .select();
+
+    if (error) {
+      console.error("Supabase update error:", error);
+      return NextResponse.redirect(new URL("/manufacturer/registration/error", request.nextUrl.origin));
+    }
+
+    if (!data || data.length === 0) {
+      console.error("No manufacturer found with email:", state);
+      return NextResponse.redirect(new URL("/manufacturer/registration/error", request.nextUrl.origin));
+    }
+
+    // Redirect to success page
+    return NextResponse.redirect(new URL("/manufacturer/registration/success", request.nextUrl.origin));
+
   } catch (error) {
     console.error("Detailed OAuth callback error:", {
       message: error.message,
       stack: error.stack,
       cause: error.cause,
     });
-    return NextResponse.redirect(
-      new URL("/manufacturer/registration/error", request.url)
-    );
+    return NextResponse.redirect(new URL("/manufacturer/registration/error", request.nextUrl.origin));
   }
 }
