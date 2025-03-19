@@ -521,7 +521,19 @@ export default function Page() {
 
   // Helper to get default labels for node types
   const getDefaultLabelForType = (type) => {
-    const nodeTypeInfo = sidebarNodeTypes.find(nt => nt.type === type);
+    // Define node types directly or import from sidebar component
+    const nodeTypes = [
+      { type: 'email', label: 'Email' },
+      { type: 'product', label: 'Product' },
+      { type: 'exception', label: 'Exception' },
+      { type: 'invoice', label: 'Invoice' },
+      { type: 'conditional', label: 'Conditional' },
+      { type: 'price_adjustment', label: 'Price Adjustment' },
+      { type: 'notification', label: 'Notification' },
+      { type: 'vip', label: 'VIP' }
+    ];
+    
+    const nodeTypeInfo = nodeTypes.find(nt => nt.type === type);
     return nodeTypeInfo ? nodeTypeInfo.label : 'New Node';
   };
 
@@ -680,33 +692,3 @@ export default function Page() {
     </WorkflowProvider>
   );
 }
-
-const renderConfigForm = (node) => {
-  const commonProps = {
-    onSave: (data) => {
-      handleConfigSave(node.id, data);
-      setSelectedNode(null); // Clear selection after save
-    },
-    initialData: node.data,
-    isFormView: true // Add this prop to indicate form view mode
-  };
-
-  switch (node.data.type) {
-    case "email":
-      return <EmailConfigModal {...commonProps} />;
-    case "product":
-      return <ProductConfigModal {...commonProps} />;
-    case "exception":
-      return <ExceptionConfigModal {...commonProps} />;
-    case "invoice":
-      return <InvoiceConfigModal {...commonProps} />;
-    case "conditional":
-      return <ConditionalConfigModal {...commonProps} />;
-    case "price_adjustment":
-      return <PriceAdjustmentConfigModal {...commonProps} />;
-    case "notification":
-      return <NotificationConfigModal {...commonProps} />;
-    default:
-      return <div>Select a configuration step to begin</div>;
-  }
-};
