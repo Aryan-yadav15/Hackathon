@@ -1,9 +1,9 @@
 /**
- * Invoice Email Template Generator
+ * Purchase Order Email Template Generator
  */
 
 /**
- * Generate a beautiful HTML invoice template
+ * Generate a beautiful HTML purchase order template
  * @param {Object} retailer - Retailer information
  * @param {Object} order - Order details
  * @param {Object} invoice - Invoice information

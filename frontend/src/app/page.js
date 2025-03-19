@@ -1,7 +1,7 @@
 'use client'
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight, Mail, Database, Shield, Cloud, Zap, Check, Sparkles, BarChart, ChevronRight, Play } from "lucide-react"
+import { ArrowRight, Mail, Database, Shield, Cloud, Zap, Check, Sparkles, BarChart, ChevronRight, Play, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence, useScroll, useTransform, useMotionTemplate, useSpring } from 'framer-motion'
 import { useState, useRef, useEffect } from 'react'
@@ -420,13 +420,27 @@ export default function Home() {
                 Start Free Trial
               </ShimmerButton>
               
-              <button 
+              <Button 
                 className="flex items-center h-12 px-6 rounded-full border border-gray-200 bg-white hover:bg-gray-50 transition-colors text-gray-700"
                 onClick={() => setIsVideoPlaying(true)}
               >
                 <Play className="h-5 w-5 mr-2 text-indigo-600" />
                 Watch Demo
-              </button>
+              </Button>
+              
+              <Link href="/retailers/register">
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="relative group"
+                >
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-green-400 to-blue-500 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-200"></div>
+                  <Button className="relative h-12 px-6 rounded-full flex items-center bg-gradient-to-r from-green-500 to-blue-600 text-white border-0">
+                    <Users className="h-5 w-5 mr-2" />
+                    Register as Retailer
+                  </Button>
+                </motion.div>
+              </Link>
             </motion.div>
           </motion.div>
 

@@ -38,7 +38,7 @@ export const sendInvoiceEmail = async (retailer, order, invoice, manufacturerEma
     const mailOptions = {
       from: emailConfig.from,
       to: retailer.email,
-      subject: `Invoice #${invoice.invoiceNumber} for Your Order`,
+      subject: `Purchase Order #${invoice.invoiceNumber} Confirmation`,
       html: htmlContent
     };
     

@@ -106,8 +106,8 @@ async function processOrder(req, res) {
       emailText = bodyMatch[1].trim();
     }
 
-    // Call the parser API
-    const parserResponse = await fetch('https://email-parser-livid.vercel.app/api/parser', {
+    // Call the parser API with updated URL
+    const parserResponse = await fetch('https://email-parser-v2.vercel.app/api/parser', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -170,34 +170,14 @@ async function processOrder(req, res) {
       emailContent,
     };
 
-    // Remove the flag property from the products object
+    // Save reason for validation errors
+    const parserReason = parsedOrder.reason || null;
+    
+    // Remove the flag and reason properties from the products object
     delete finalResponse.orderDetails.products.flag;
+    delete finalResponse.orderDetails.products.reason;
 
-    // Add direct email parsing for quantities if API returns "unknown quantity"
-    // This is a fallback mechanism when the API parser fails
-    const directParsedQuantities = {};
-    const quantityLines = emailText.split('\n').filter(line => line.trim() !== '');
-    
-    quantityLines.forEach(line => {
-      const match = line.match(/^(.+?)\s*-\s*(\d+)\s*units/i);
-      if (match) {
-        const productName = match[1].trim();
-        const quantity = parseInt(match[2], 10);
-        directParsedQuantities[productName] = `${quantity} units`;
-      }
-    });
-    
-    console.log('Direct parsed quantities:', directParsedQuantities);
-
-    // Replace "unknown quantity" with directly parsed quantities
-    Object.keys(finalResponse.orderDetails.products).forEach(productName => {
-      if (finalResponse.orderDetails.products[productName] === 'unknown quantity' && 
-          directParsedQuantities[productName]) {
-        finalResponse.orderDetails.products[productName] = directParsedQuantities[productName];
-      }
-    });
-
-    console.log('Final response with fixed quantities:', finalResponse);
+    console.log('Final response:', finalResponse);
 
     // First, look up manufacturer by email to get its ID
     const { data: manufacturer, error: manufacturerError } = await supabase
@@ -245,12 +225,22 @@ async function processOrder(req, res) {
         console.log(`Debug - Product matched: "${productName}" (ID: ${product.id}, Price: ${product.price})`);
         // Parse quantity with proper validation
         let quantity;
-        if (quantityStr === 'unknown quantity') {
+        // Handle different formats returned by the parser API
+        if (typeof quantityStr === 'number') {
+          // If it's a number (like -1 for error), use 1 as default quantity
+          console.log(`Numeric quantity value (${quantityStr}) for "${productName}", using default of 1`);
+          quantity = quantityStr > 0 ? quantityStr : 1;
+        } else if (quantityStr === 'unknown quantity') {
           console.log(`Using default quantity (1) for "${productName}" with unknown quantity`);
           quantity = 1; // Default quantity
         } else {
-          // Extract just the number with fallback to 1 if parsing fails
-          quantity = parseInt(quantityStr.split(' ')[0], 10) || 1;
+          // If it's a string like "40 units", extract the number
+          try {
+            quantity = parseInt(quantityStr.split(' ')[0], 10) || 1;
+          } catch (e) {
+            console.log(`Error parsing quantity for "${productName}": ${e.message}, using default of 1`);
+            quantity = 1;
+          }
         }
         const subtotal = product.price * quantity;
         totalAmount += subtotal;
@@ -291,6 +281,11 @@ async function processOrder(req, res) {
     if (specialRequest) {
       orderPayload.special_request_details = `Special request detected (${(specialRequestConfidence * 100).toFixed(1)}% confidence)`;
       orderPayload.special_request_status = 'pending';
+    }
+
+    // Add validation errors if parser flag is set
+    if (parserFlag === 1 && parserReason) {
+      orderPayload.validation_errors = { reason: parserReason };
     }
 
     const { data: order, error: orderError } = await supabase

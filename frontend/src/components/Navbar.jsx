@@ -5,7 +5,7 @@ import { useUser } from "@clerk/nextjs";
 import Link from "next/link"
 import { Button } from "./ui/button"
 import { motion } from "framer-motion";
-import { ArrowRight, BarChart, Package, Menu } from "lucide-react";
+import { ArrowRight, BarChart, Package, Menu, Sparkles, Users } from "lucide-react";
 import { useState } from "react";
 
 export default function Navbar() {
@@ -34,8 +34,9 @@ export default function Navbar() {
                 <Package className="w-4 h-4 mr-2" />
                 Orders
               </NavLink>
-              <NavLink href="/retailers/register">
-                Retailer Registration
+              <NavLink href="/retailers">
+                <Users className="w-4 h-4 mr-2" />
+                Retailers
               </NavLink>
               <NavLink href="/canvas">
                 Canvas
@@ -48,12 +49,20 @@ export default function Navbar() {
               <>
                 {user ? (
                   <div className="flex items-center space-x-4">
-                    <Link href="/dashboard">
-                      <Button variant="outline" className="hidden md:flex">
-                        <BarChart className="mr-2 h-4 w-4" />
-                        Dashboard
-                      </Button>
+                    <Link href="/dashboard/ai-insights">
+                      <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="relative group"
+                      >
+                        <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-blue-500 rounded-lg blur opacity-60 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
+                        <Button className="relative bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-0 flex items-center">
+                          <Sparkles className="mr-2 h-4 w-4" />
+                          AI Insights
+                        </Button>
+                      </motion.div>
                     </Link>
+                    
                     <div className="relative">
                       <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white z-10"></div>
                       <UserButton 
@@ -109,12 +118,17 @@ export default function Navbar() {
               <BarChart className="w-4 h-4 mr-2" />
               Dashboard
             </MobileNavLink>
+            <MobileNavLink href="/dashboard/ai-insights">
+              <Sparkles className="w-4 h-4 mr-2" />
+              AI Insights
+            </MobileNavLink>
             <MobileNavLink href="/orders">
               <Package className="w-4 h-4 mr-2" />
               Orders
             </MobileNavLink>
-            <MobileNavLink href="/retailers/register">
-              Retailer Registration
+            <MobileNavLink href="/retailers">
+              <Users className="w-4 h-4 mr-2" />
+              Retailers
             </MobileNavLink>
             <MobileNavLink href="/canvas">
               Canvas
