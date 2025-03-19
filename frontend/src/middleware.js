@@ -1,11 +1,14 @@
-import { authMiddleware } from '@clerk/nextjs';
+import { clerkMiddleware } from '@clerk/nextjs/server';
 
-export default authMiddleware({
+export default clerkMiddleware({
   publicRoutes: [
     '/',
     '/sign-in(.*)',
     '/sign-up(.*)',
-    '/api/uipath/webhook(.*)'
+    '/api/uipath/webhook(.*)',
+    '/api/oauth2callback(.*)',
+    '/api/gettokens(.*)',
+    '/manufacturer/registration/(.*)'
   ],
 });
 

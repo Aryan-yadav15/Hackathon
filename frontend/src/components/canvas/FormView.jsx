@@ -136,32 +136,6 @@ export default function FormView({ nodes, onSave, onAddNode, onSaveWorkflow }) {
     !essentialNodeTypes.includes(node.data?.type)
   );
 
-  // Then in the nodes list JSX section, after displaying the essential nodes:
-  {advancedNodes.length > 0 && (
-    <div className="mt-6">
-      <h3 className="text-sm font-medium text-gray-500 mb-2">Advanced Nodes (Canvas View Only)</h3>
-      <div className="space-y-2">
-        {advancedNodes.map(node => (
-          <div key={node.id} className="flex items-center p-3 border border-gray-200 bg-gray-50 rounded-md opacity-70">
-            <div className="mr-3">
-              {getNodeIcon(node.data.type)}
-            </div>
-            <div>
-              <p className="text-sm font-medium">{node.data.label}</p>
-              <p className="text-xs text-gray-500">This node can only be edited in Canvas View</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )}
-
-  // Add this helper function to get the appropriate icon
-  const getNodeIcon = (type) => {
-    const nodeType = nodeTypes.find(nt => nt.type === type);
-    return nodeType ? nodeType.icon : null;
-  };
-
   return (
     <div className="flex h-full">
       {/* Left Sidebar - Steps */}
@@ -256,6 +230,29 @@ export default function FormView({ nodes, onSave, onAddNode, onSaveWorkflow }) {
             >
               Save Workflow
             </Button>
+          </div>
+        )}
+
+        {advancedNodes.length > 0 && (
+          <div className="mt-6">
+            <h3 className="text-sm font-medium text-gray-500 mb-2">Advanced Nodes (Canvas View Only)</h3>
+            <div className="space-y-2">
+              {advancedNodes.map(node => {
+                // Find the icon directly from nodeTypes
+                const nodeTypeInfo = nodeTypes.find(nt => nt.type === node.data.type) || {};
+                return (
+                  <div key={node.id} className="flex items-center p-3 border border-gray-200 bg-gray-50 rounded-md opacity-70">
+                    <div className="mr-3">
+                      {nodeTypeInfo.icon || <div className="w-5 h-5 bg-gray-300 rounded-full" />}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{node.data.label}</p>
+                      <p className="text-xs text-gray-500">This node can only be edited in Canvas View</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

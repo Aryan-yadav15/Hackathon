@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useSupabase } from "@/lib/supabase";
 import { useManufacturer } from "@/hooks/useManufacturer";
+import { toast } from "sonner";
 
 export default function EmailConfigForm({ onSave, initialData }) {
   const [isVerifying, setIsVerifying] = useState(false);
@@ -22,7 +23,21 @@ export default function EmailConfigForm({ onSave, initialData }) {
     
     console.log("Using redirect URI:", redirectUri); // For debugging
     
-    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=https://mail.google.com/&access_type=offline&prompt=consent&state=${emailConfig.email}`;
+    // Construct the OAuth URL
+    const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=https://mail.google.com/&access_type=offline&prompt=consent&state=${emailConfig.email}`;
+    
+    // Debug: log the full constructed URL
+    console.log("OAuth URL:", oauthUrl);
+    
+    // Make sure the email is set
+    if (!emailConfig.email || emailConfig.email.trim() === "") {
+      toast.error("Please enter an email address first");
+      setIsVerifying(false);
+      return;
+    }
+    
+    // Navigate to the OAuth URL
+    window.location.href = oauthUrl;
   };
 
   const handleSave = () => {
@@ -61,6 +76,10 @@ export default function EmailConfigForm({ onSave, initialData }) {
               {isVerifying ? "Verifying..." : "Verify Email"}
             </Button>
           </div>
+          <p className="text-xs text-gray-500 mt-1">
+            Note: Use an email that's registered in the system as a manufacturer.
+            Testing with: mailmeshupdates@gmail.com
+          </p>
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">Folder to Monitor</label>
