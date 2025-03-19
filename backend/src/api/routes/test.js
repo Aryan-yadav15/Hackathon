@@ -242,8 +242,15 @@ async function processOrder(req, res) {
 
       if (product) {
         console.log(`Debug - Product matched: "${productName}" (ID: ${product.id}, Price: ${product.price})`);
-        // Parse quantity - extract just the number
-        const quantity = parseInt(quantityStr.split(' ')[0], 10);
+        // Parse quantity with proper validation
+        let quantity;
+        if (quantityStr === 'unknown quantity') {
+          console.log(`Using default quantity (1) for "${productName}" with unknown quantity`);
+          quantity = 1; // Default quantity
+        } else {
+          // Extract just the number with fallback to 1 if parsing fails
+          quantity = parseInt(quantityStr.split(' ')[0], 10) || 1;
+        }
         const subtotal = product.price * quantity;
         totalAmount += subtotal;
 
