@@ -236,7 +236,7 @@ router.post('/', async (req, res) => {
       };
       
       // Send invoice email
-      await sendInvoiceEmail(retailerForInvoice, orderForInvoice, invoiceData);
+      await sendInvoiceEmail(retailerForInvoice, orderForInvoice, invoiceData, emailMetadata.to);
       console.log('📧 Invoice email sent successfully to retailer:', retailerForInvoice.email);
     } catch (invoiceError) {
       console.error('❌ Error sending invoice email:', invoiceError);

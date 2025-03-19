@@ -76,6 +76,12 @@ export async function createOrder(parsedData) {
         totalAmount += quantity * price;
     }
 
+    // Extract email content from parsedData if available
+    let emailBody = "";
+    if (parsedData.emailContent) {
+        emailBody = parsedData.emailContent;
+    }
+
     // Insert order with special request flag and email body
     const { data: orderData, error: orderError } = await supabase
         .from('orders')
@@ -89,7 +95,7 @@ export async function createOrder(parsedData) {
             special_request_confidence: orderDetails.specialRequestConfidence || 0,
             parser_flag: orderDetails.parserFlag || 0,
             special_request_details: orderDetails.specialRequest ? "Special request from customer" : null,
-            email_body: JSON.stringify(parsedData),
+            email_body: emailBody,
             email_subject: emailMetadata.subject,
             email_parsed_data: parsedData,
             created_at: new Date().toISOString(),

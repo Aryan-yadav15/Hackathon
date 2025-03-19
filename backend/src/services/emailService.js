@@ -24,14 +24,15 @@ console.log('Email configuration loaded:', {
  * @param {Object} retailer - Retailer information including email
  * @param {Object} order - Order details
  * @param {Object} invoice - Invoice information
+ * @param {string} manufacturerEmail - Manufacturer's email address
  * @returns {Promise} - Promise resolving to info about sent email
  */
-export const sendInvoiceEmail = async (retailer, order, invoice) => {
+export const sendInvoiceEmail = async (retailer, order, invoice, manufacturerEmail = 'support@yourcompany.com') => {
   try {
     console.log('Generating email content for recipient:', retailer.email);
     
     // Generate HTML content for invoice
-    const htmlContent = generateInvoiceTemplate(retailer, order, invoice);
+    const htmlContent = generateInvoiceTemplate(retailer, order, invoice, manufacturerEmail);
     
     // Setup email data
     const mailOptions = {

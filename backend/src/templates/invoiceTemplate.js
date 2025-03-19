@@ -7,9 +7,10 @@
  * @param {Object} retailer - Retailer information
  * @param {Object} order - Order details
  * @param {Object} invoice - Invoice information
+ * @param {string} manufacturerEmail - Manufacturer's email address
  * @returns {String} - HTML content for the email
  */
-export const generateInvoiceTemplate = (retailer, order, invoice) => {
+export const generateInvoiceTemplate = (retailer, order, invoice, manufacturerEmail = 'support@yourcompany.com') => {
   // Format currency
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
@@ -46,13 +47,13 @@ export const generateInvoiceTemplate = (retailer, order, invoice) => {
     <html>
     <head>
       <meta charset="utf-8">
-      <title>Invoice #${invoice.invoiceNumber}</title>
+      <title>Purchase Order  #${invoice.invoiceNumber}</title>
     </head>
     <body style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; line-height: 1.6; margin: 0; padding: 0;">
       <div style="max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
         <div style="background-color: #4a6cf7; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0;">
-          <h1 style="margin: 0; font-size: 24px;">INVOICE</h1>
-          <p style="margin: 5px 0 0 0;">Invoice #${invoice.invoiceNumber}</p>
+          <h1 style="margin: 0; font-size: 24px;">Purchase Order</h1>
+          <p style="margin: 5px 0 0 0;">PO #${invoice.invoiceNumber}</p>
         </div>
         
         <div style="background-color: white; padding: 20px; border-radius: 0 0 5px 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
@@ -65,9 +66,9 @@ export const generateInvoiceTemplate = (retailer, order, invoice) => {
               ${retailer.phone ? `<p style="margin: 0; font-size: 15px;">${retailer.phone}</p>` : ''}
             </div>
             <div>
-              <h3 style="margin: 0 0 5px 0; color: #555;">Invoice Details:</h3>
+              <h3 style="margin: 0 0 5px 0; color: #555;">P/O Details:</h3>
               <p style="margin: 0; font-size: 15px;"><strong>Date:</strong> ${formatDate(invoice.date)}</p>
-              <p style="margin: 0; font-size: 15px;"><strong>Order ID:</strong> ${order.orderId}</p>
+              <p style="margin: 0; font-size: 15px;"><strong>P/O ID:</strong> ${order.orderId}</p>
               <p style="margin: 0; font-size: 15px;"><strong>Payment Status:</strong> <span style="color: ${invoice.paid ? '#4CAF50' : '#F44336'};">${invoice.paid ? 'Paid' : 'Pending'}</span></p>
             </div>
           </div>
@@ -101,14 +102,14 @@ export const generateInvoiceTemplate = (retailer, order, invoice) => {
           </table>
           
           <div style="border-top: 1px solid #eee; padding-top: 20px;">
-            <h3 style="margin: 0 0 10px 0; color: #555;">Payment Information:</h3>
-            <p style="margin: 0 0 5px 0; font-size: 15px;">Please make payment via the method specified in your retailer agreement.</p>
-            <p style="margin: 0; font-size: 15px;">Payment is due within ${invoice.paymentTerms || 30} days.</p>
+            <h3 style="margin: 0 0 10px 0; color: #555;">COnfirmation required:</h3>
+            <p style="margin: 0 0 5px 0; font-size: 15px;">Incase of any mismissing products or mails us at ${manufacturerEmail} </p>
+            <p style="margin: 0; font-size: 15px;">or the order will be processed in 2 days</p>
           </div>
           
           <div style="margin-top: 30px; text-align: center; color: #777; font-size: 14px;">
             <p style="margin: 0;">Thank you for your business!</p>
-            <p style="margin: 5px 0 0 0;">For any questions, please contact support@yourcompany.com</p>
+            <p style="margin: 5px 0 0 0;">For any questions, please contact ${manufacturerEmail}</p>
           </div>
         </div>
       </div>
