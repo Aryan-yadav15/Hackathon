@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
 export default function SetupProfileForm() {
-  const { user } = useUser()
+  const { user, isLoaded } = useUser()
   const [companyName, setCompanyName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -14,7 +14,13 @@ export default function SetupProfileForm() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
+    setError(null)
+
     try {
+      if (!isLoaded || !user) {
+        throw new Error('User data not loaded yet.')
+      }
+
       const response = await fetch('/api/manufacturers', {
         method: 'POST',
         headers: {
@@ -22,7 +28,7 @@ export default function SetupProfileForm() {
         },
         body: JSON.stringify({
           company_name: companyName,
-          clerk_id: user.id // Send Clerk user ID
+          email: user.emailAddresses[0].emailAddress
         })
       })
 
@@ -35,7 +41,6 @@ export default function SetupProfileForm() {
         throw new Error(data.error || data.details || 'Failed to create manufacturer profile')
       }
 
-      // Refresh the page after successful submission
       window.location.reload()
     } catch (err) {
       console.error('Profile setup error:', err)
@@ -43,6 +48,10 @@ export default function SetupProfileForm() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (!isLoaded) {
+    return <div>Loading...</div>
   }
 
   return (
@@ -62,7 +71,8 @@ export default function SetupProfileForm() {
           <label className="block text-sm font-medium mb-1">Email</label>
           <Input
             type="email"
-            value={user?.emailAddresses[0]?.emailAddress || ''}
+            value={user.emailAddresses[0].emailAddress}
+            readOnly
             disabled
           />
         </div>

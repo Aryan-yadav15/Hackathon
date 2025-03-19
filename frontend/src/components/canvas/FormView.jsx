@@ -12,6 +12,7 @@ import NotificationConfigModal from "../canvas/modals/NotificationConfigModal"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useManufacturer } from "@/hooks/useManufacturer"
 
 const nodeTypes = [
   {
@@ -69,6 +70,7 @@ const hasAdvancedNodes = (workflowNodes) => {
 export default function FormView({ nodes, onSave, onAddNode, onSaveWorkflow }) {
   const [selectedNode, setSelectedNode] = useState(null)
   const [newNodeType, setNewNodeType] = useState('')
+  const { manufacturer } = useManufacturer();
 
   const handleAddNode = () => {
     if (!newNodeType) return
@@ -83,19 +85,29 @@ export default function FormView({ nodes, onSave, onAddNode, onSaveWorkflow }) {
   }
 
   const renderConfigForm = (node) => {
+    console.log("Node data being passed to modal:", node.data);
+    
     const commonProps = {
       onSave: (data) => {
         onSave(node.id, data)
         setSelectedNode(null)
       },
-      initialData: node.data,
-      isFormView: true
+      initialData: {
+        ...node.data,
+        manufacturer_id: node.data.manufacturer_id || manufacturer?.id,
+        isFormView: true
+      },
+      isOpen: true,
+      onClose: () => setSelectedNode(null)
     }
+
+    console.log(`Rendering form for node type: ${node.data.type}`, commonProps.initialData);
 
     switch (node.data.type) {
       case "email":
         return <EmailConfigModal {...commonProps} />
       case "product":
+        console.log("Opening product modal with data:", node.data);
         return <ProductConfigModal {...commonProps} />
       case "exception":
         return <ExceptionConfigModal {...commonProps} />

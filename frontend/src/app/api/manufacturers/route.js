@@ -1,76 +1,125 @@
-import { currentUser } from "@clerk/nextjs/server"
-import { createClient } from '@supabase/supabase-js'
 import { auth } from '@clerk/nextjs/server'
-
-// Create Supabase client inside the API route
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-)
+import { NextResponse } from 'next/server'
+import { supabase } from '@/lib/supabase-server'  // Replace createClient import
 
 export async function GET() {
+  // Add proper error handling for auth()
   try {
-    const user = await currentUser();
+    // Properly await the auth() call
+    const { userId } = await auth();
     
-    if (!user) {
-      console.log('Auth failed:', { user: !!user });
-      return Response.json({ error: 'Unauthorized', details: 'No user found' }, { status: 401 });
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' }, 
+        { status: 401 }
+      );
     }
 
     const { data: manufacturer, error } = await supabase
       .from('manufacturers')
       .select('*')
-      .eq('clerk_id', user.id)
+      .eq('clerk_id', userId)
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching manufacturer:', error);
+      return NextResponse.json({ error: 'Database error' }, { status: 500 });
+    }
 
-    return Response.json(manufacturer || null);
+    if (!manufacturer) {
+      return NextResponse.json({ error: 'Manufacturer not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(manufacturer);
   } catch (error) {
-    console.error('Manufacturers GET error:', error);
-    return Response.json({ error: error.message }, { status: 400 });
+    console.error('Auth error:', error);
+    return NextResponse.json(
+      { error: 'Authentication failed' },
+      { status: 500 }
+    );
   }
 }
 
 export async function POST(request) {
-  const { userId } = auth()
+  // Get auth info from Clerk with await
+  const { userId } = await auth();
   
+  // For debugging
+  console.log('POST /api/manufacturers - User ID:', userId);
+  
+  // Check if user is authenticated
   if (!userId) {
-    console.log('Auth failed on POST:', { user: !!userId });
-    return Response.json({ error: 'Unauthorized', details: 'No user found' }, { status: 401 });
+    console.log('Authentication failed - no userId found');
+    return NextResponse.json(
+      { error: 'Unauthorized', details: 'You must be logged in' },
+      { status: 401 }
+    );
   }
 
   try {
     const body = await request.json();
-
-    // Check if manufacturer already exists
-    const { data: existingManufacturer } = await supabase
-      .from('manufacturers')
-      .select('id')
-      .eq('clerk_id', userId)
-      .single();
-
-    if (existingManufacturer) {
-      return Response.json({ error: 'Manufacturer already exists' }, { status: 400 });
+    console.log('Request body:', body); // Debug the request body
+    
+    const { company_name } = body;
+    
+    // Validate request body
+    if (!company_name) {
+      return NextResponse.json(
+        { error: 'Bad Request', details: 'Company name is required' },
+        { status: 400 }
+      );
     }
 
-    // Create new manufacturer
-    const { data: manufacturer, error } = await supabase
+    // Use the already imported supabase client - don't create a new one
+    // Check if company name already exists
+    const { data: existingManufacturer, error: checkError } = await supabase
       .from('manufacturers')
-      .insert([{
-        clerk_id: userId,
-        company_name: body.company_name || userId,
-        email: userId + '@example.com',
-        is_active: true
-      }])
-      .select()
+      .select('id')
+      .eq('clerk_id', userId.toString())
       .single();
 
-    if (error) throw error;
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('Error checking company name:', checkError);
+      return NextResponse.json(
+        { error: 'Database Error', details: checkError.message },
+        { status: 500 }
+      );
+    }
 
-    return Response.json(manufacturer);
+    if (existingManufacturer) {
+      return NextResponse.json(
+        { error: 'Conflict', details: 'Company name already exists' },
+        { status: 409 }
+      );
+    }
+
+    // Get user email from the request
+    const userEmail = body.email;
+
+    // Insert new manufacturer
+    const { data, error } = await supabase.from('manufacturers').insert([
+      {
+        company_name: company_name,
+        email: userEmail || 'placeholder@example.com',
+        clerk_id: userId.toString(),
+        is_active: true
+      }
+    ]).select();
+
+    if (error) {
+      console.error('Error creating manufacturer:', error);
+      return NextResponse.json(
+        { error: 'Database Error', details: error.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true, data }, { status: 201 });
   } catch (error) {
-    console.error('Manufacturers POST error:', error);
-    return Response.json({ error: error.message }, { status: 400 });
+    console.error('Server error:', error);
+    return NextResponse.json(
+      { error: 'Server Error', details: error.message },
+      { status: 500 }
+    );
   }
 } 

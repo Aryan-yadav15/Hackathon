@@ -128,6 +128,52 @@ const cleanNodeData = (node) => {
   return node;
 };
 
+// Clean node data to ensure proper product IDs before saving
+const cleanProductData = (workflowNodes) => {
+  return workflowNodes.map(node => {
+    const processedNode = { ...node };
+    
+    // If it's a product node and has config
+    if (node.type === 'product' && node.config) {
+      // Make sure productIds exist and are numbers
+      if (node.config.productIds) {
+        processedNode.config.productIds = node.config.productIds
+          .map(id => {
+            // If it's a string with letters (like "product-123")
+            if (typeof id === 'string' && /[a-zA-Z]/.test(id)) {
+              const matches = id.match(/\d+/);
+              if (matches && matches[0]) {
+                return parseInt(matches[0], 10);
+              }
+              return null;
+            }
+            
+            // If it's a numeric string
+            if (typeof id === 'string' && !isNaN(id)) {
+              return parseInt(id, 10);
+            }
+            
+            // If it's already a number
+            if (typeof id === 'number') {
+              return id;
+            }
+            
+            console.warn('Invalid product ID format:', id);
+            return null;
+          })
+          .filter(id => id !== null);
+      }
+      
+      // Remove full product objects, we only need IDs
+      if (node.config.products) {
+        delete processedNode.config.products;
+      }
+    }
+    
+    return processedNode;
+  });
+};
+
 export async function POST(request) {
   try {
     const { userId } = await auth()
@@ -200,20 +246,23 @@ export async function POST(request) {
         .eq('id', existingWorkflow.id)
     }
 
-    // Clean all node data before saving
-    const cleanedNodes = workflow_nodes.map(cleanNodeData);
-    
-    // When inserting into the database, log the exact insert data
+    // Clean node data to ensure proper product IDs before saving
+    const cleanedNodes = cleanProductData(workflow_nodes).map(node => ({
+      type: node.type,
+      position_x: Math.round(parseFloat(node.position_x)),
+      position_y: Math.round(parseFloat(node.position_y)),
+      config: node.config
+    }));
+
     console.log('About to insert workflow with nodes:', cleanedNodes);
-    
+
     // Use the cleaned nodes for database operations
     const { data: workflow, error: workflowError } = await supabase
       .from('workflows')
       .insert({
         manufacturer_id: manufacturer.id,
         name: 'Default Workflow',
-        is_active: true,
-        nodes: cleanedNodes
+        is_active: true
       })
       .select()
       .single()
@@ -226,9 +275,17 @@ export async function POST(request) {
 
     // Save nodes with workflow_id
     if (workflow_nodes && workflow_nodes.length > 0) {
+      // Add workflow_id to each node
+      const nodesToInsert = cleanedNodes.map(node => ({
+        ...node,
+        workflow_id: workflow.id
+      }));
+      
+      console.log('Inserting nodes with workflow_id:', nodesToInsert);
+      
       const { data: nodes, error: nodesError } = await supabase
         .from('workflow_nodes')
-        .insert(cleanedNodes)
+        .insert(nodesToInsert)
         .select()
 
       if (nodesError) throw nodesError

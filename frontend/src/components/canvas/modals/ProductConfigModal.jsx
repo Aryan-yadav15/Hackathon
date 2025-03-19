@@ -10,84 +10,71 @@ import { useSupabase } from "@/lib/supabase"
 import { useManufacturer } from "@/hooks/useManufacturer"
 import { Label } from "@/components/ui/label"
 
-export default function ProductConfigModal({ isOpen, onClose, onSave, initialData, isFormView = false }) {
+export default function ProductConfigModal({ isOpen, onClose, onSave, initialData = {} }) {
   const supabase = useSupabase()
   const { manufacturer } = useManufacturer()
-  const [productConfig, setProductConfig] = useState({
-    products: initialData?.products || [],
-    manufacturer_id: manufacturer?.id
-  })
+  const [products, setProducts] = useState([])
+  const [selectedProductIds, setSelectedProductIds] = useState(initialData.productIds || [])
+  const [isLoading, setIsLoading] = useState(true)
   const [newProduct, setNewProduct] = useState({
     name: '',
     sku: '',
     price: ''
   })
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  // Fetch existing products for this manufacturer
+  // Fetch products on component mount
   useEffect(() => {
     const fetchProducts = async () => {
-      if (!manufacturer?.id) return;
-      
-      setLoading(true);
+      setIsLoading(true)
       try {
-        // If we have product IDs in initialData, load those specific products
-        if (initialData?.productIds?.length > 0) {
-          console.log('Loading specific products from IDs:', initialData.productIds);
-          
-          // Create a comma separated list of IDs
-          const idString = initialData.productIds.join(',');
-          const response = await fetch(`/api/products?ids=${idString}`);
-          
-          if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to load products by IDs');
-          }
-          
-          const productsData = await response.json();
-          setProductConfig(prev => ({
-            ...prev,
-            products: productsData || []
-          }));
-          
-          return;
+        // Get manufacturer ID from user context if available, or use initialData
+        const manufacturerId = initialData.manufacturer_id
+        
+        if (!manufacturerId) {
+          console.error('No manufacturer ID available')
+          setIsLoading(false)
+          return
         }
         
-        // Otherwise load all products for this manufacturer
+        console.log('Fetching products for manufacturer:', manufacturerId)
+        
         const { data, error } = await supabase
           .from('products')
-          .select('*')
-          .eq('manufacturer_id', manufacturer.id)
-          .order('name');
+          .select('id, name, sku, price')
+          .eq('manufacturer_id', manufacturerId)
         
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching products:', error)
+          return
+        }
         
-        setProductConfig(prev => ({
-          ...prev,
-          products: data
-        }));
+        console.log('Fetched products:', data)
+        setProducts(data || [])
+        
+        // Initialize selected products based on initialData
+        if (initialData.productIds) {
+          console.log('Initial product IDs:', initialData.productIds)
+          // Make sure IDs are numbers
+          const numericIds = initialData.productIds.map(id => 
+            typeof id === 'string' ? parseInt(id, 10) : id
+          ).filter(id => !isNaN(id))
+          
+          setSelectedProductIds(numericIds)
+          console.log('Set selected product IDs:', numericIds)
+        }
       } catch (err) {
-        setError(err.message);
+        console.error('Failed to fetch products:', err)
       } finally {
-        setLoading(false);
+        setIsLoading(false)
       }
-    };
+    }
     
-    if (isOpen && manufacturer?.id) {
-      fetchProducts();
+    // Always fetch products when in form view
+    if (isOpen || initialData.isFormView) {
+      fetchProducts()
     }
-  }, [isOpen, manufacturer?.id, initialData?.productIds]);
-
-  // Update config when manufacturer changes
-  useEffect(() => {
-    if (manufacturer?.id) {
-      setProductConfig(prev => ({
-        ...prev,
-        manufacturer_id: manufacturer.id
-      }))
-    }
-  }, [manufacturer])
+  }, [isOpen, initialData])
 
   const handleAddProduct = async () => {
     try {
@@ -101,69 +88,64 @@ export default function ProductConfigModal({ isOpen, onClose, onSave, initialDat
           manufacturer_id: manufacturer.id,
           price: parseFloat(newProduct.price)
         })
-      });
+      })
 
-      if (!response.ok) throw new Error('Failed to save product');
+      if (!response.ok) throw new Error('Failed to save product')
       
-      const savedProduct = await response.json();
+      const savedProduct = await response.json()
       
-      const updatedProducts = [...productConfig.products, savedProduct];
-      setProductConfig(prev => ({...prev, products: updatedProducts}));
+      const updatedProducts = [...products, savedProduct]
+      setProducts(updatedProducts)
       
     } catch (error) {
-      console.error('Product save failed:', error);
-      setError(error.message);
+      console.error('Product save failed:', error)
+      setError(error.message)
     }
   }
 
   const handleRemoveProduct = (productId) => {
-    const updatedProducts = productConfig.products.filter(
+    const updatedProducts = products.filter(
       product => product.id !== productId
     )
     
-    setProductConfig(prev => ({
-      ...prev,
-      products: updatedProducts
-    }))
+    setProducts(updatedProducts)
   }
 
-  const handleSubmit = () => {
-    // Debug log
-    console.log('Products in config:', productConfig.products);
+  const handleSave = () => {
+    // Make sure we're sending numeric IDs
+    const numericIds = selectedProductIds.map(id => 
+      typeof id === 'string' ? parseInt(id, 10) : id
+    ).filter(id => !isNaN(id))
     
-    const productIds = productConfig.products.map(product => {
-      // Same logic as in ProductConfigForm
-      if (typeof product.id === 'string') {
-        const matches = product.id.match(/\d+/);
-        if (matches && matches[0]) {
-          return parseInt(matches[0], 10);
-        }
-        if (!isNaN(product.id)) {
-          return parseInt(product.id, 10);
-        }
-      }
-      return product.id;
-    });
-    
-    console.log('Processed productIds:', productIds);
+    console.log('Saving product node with IDs:', numericIds)
     
     onSave({
-      productIds,
+      ...initialData,
+      productIds: numericIds,
       configured: true,
-      type: 'product',
-      label: 'Product Configuration',
-      productCount: productConfig.products.length
+      productCount: numericIds.length
+    })
+  }
+
+  const toggleProductSelection = (productId) => {
+    setSelectedProductIds(prev => {
+      if (prev.includes(productId)) {
+        return prev.filter(id => id !== productId);
+      } else {
+        return [...prev, productId];
+      }
     });
-    
-    if (!isFormView) {
-      onClose();
-    }
+    console.log(`Toggled product ${productId}, new selection:`, 
+      selectedProductIds.includes(productId) 
+        ? selectedProductIds.filter(id => id !== productId)
+        : [...selectedProductIds, productId]
+    );
   }
 
   const renderContent = () => (
     <div className="space-y-6">
       <div>
-        <h3 className={isFormView ? "text-lg font-medium mb-4" : "hidden"}>Product Configuration</h3>
+        <h3 className="text-lg font-medium mb-4">Product Configuration</h3>
         <div className="space-y-4">
           <div className="grid grid-cols-12 gap-2">
             <div className="col-span-5">
@@ -207,15 +189,20 @@ export default function ProductConfigModal({ isOpen, onClose, onSave, initialDat
           </div>
 
           <div className="border rounded-md p-3">
-            <h4 className="text-sm font-medium mb-2">Product List ({productConfig.products.length})</h4>
-            {productConfig.products.length === 0 ? (
-              <p className="text-sm text-gray-500 italic">No products added yet</p>
-            ) : (
+            <h4 className="text-sm font-medium mb-2">
+              Product List ({products.length}) - Selected: {selectedProductIds.length}
+            </h4>
+            {!isLoading ? (
               <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                {productConfig.products.map((product) => (
+                {products.map((product) => (
                   <div
                     key={product.id}
-                    className="flex items-center justify-between p-2 bg-gray-50 rounded-md"
+                    className={`flex items-center justify-between p-2 rounded-md cursor-pointer ${
+                      selectedProductIds.includes(product.id) 
+                        ? 'bg-blue-50 border-blue-200 border' 
+                        : 'bg-gray-50'
+                    }`}
+                    onClick={() => toggleProductSelection(product.id)}
                   >
                     <div className="flex-1">
                       <div className="font-medium">{product.name}</div>
@@ -224,24 +211,40 @@ export default function ProductConfigModal({ isOpen, onClose, onSave, initialDat
                         <span>Price: ${product.price.toFixed(2)}</span>
                       </div>
                     </div>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleRemoveProduct(product.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedProductIds.includes(product.id)}
+                        onChange={() => toggleProductSelection(product.id)}
+                        className="h-4 w-4 text-blue-600"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveProduct(product.id);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
+              </div>
+            ) : (
+              <div className="py-8 text-center">
+                <p className="text-gray-500">Loading products...</p>
               </div>
             )}
           </div>
           
-          {isFormView && (
+          {isLoading && (
             <Button 
-              onClick={handleSubmit}
+              onClick={handleSave}
               className="w-full mt-4" 
-              disabled={productConfig.products.length === 0}
+              disabled={selectedProductIds.length === 0}
             >
               Save Configuration
             </Button>
@@ -250,10 +253,6 @@ export default function ProductConfigModal({ isOpen, onClose, onSave, initialDat
       </div>
     </div>
   )
-
-  if (isFormView) {
-    return renderContent()
-  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -269,10 +268,10 @@ export default function ProductConfigModal({ isOpen, onClose, onSave, initialDat
             Cancel
           </Button>
           <Button 
-            onClick={handleSubmit}
-            disabled={productConfig.products.length === 0}
+            onClick={handleSave}
+            disabled={selectedProductIds.length === 0}
           >
-            Save
+            Save ({selectedProductIds.length} products)
           </Button>
         </div>
       </DialogContent>
