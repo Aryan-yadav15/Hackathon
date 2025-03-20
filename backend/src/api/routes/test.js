@@ -126,7 +126,7 @@ async function processOrder(req, res) {
     console.log('Parsed order:', parsedOrder);
 
     // Always check both parser flag and special request
-    const HF_API_URL = 'https://api-inference.huggingface.co/models/harshitme08/email-classifier-distilbert';
+    const HF_API_URL = 'https://router.huggingface.co/hf-inference/models/harshitme08/email-classifier-distilbert';
     const hfToken = process.env.HUGGINGFACE_TOKEN;  // Get from environment
 
     const hfResponse = await fetch(HF_API_URL, {
