@@ -186,7 +186,21 @@ export default function TicketModal({ isOpen, onClose, ticket, refreshTickets })
               <div className="mb-3">
                 <div className="text-xs font-medium text-gray-500">Email Body:</div>
                 <div className="bg-white p-3 rounded border mt-1 max-h-60 overflow-y-auto whitespace-pre-wrap text-sm">
-                  {ticket.email_body || 'No email body'}
+                  {ticket.email_body || 
+                   ticket.email_content || 
+                   (ticket.email_parsed_data && (
+                     ticket.email_parsed_data.emailContent ||
+                     ticket.email_parsed_data.rawEmail || 
+                     ticket.email_parsed_data.emailBody ||
+                     ticket.email_parsed_data.body ||
+                     ticket.email_parsed_data.content ||
+                     (ticket.email_parsed_data.orderDetails && ticket.email_parsed_data.orderDetails.emailBody) ||
+                     (ticket.email_parsed_data.orderDetails && ticket.email_parsed_data.orderDetails.body) ||
+                     (typeof ticket.email_parsed_data === 'string' ? 
+                       ticket.email_parsed_data : 
+                       JSON.stringify(ticket.email_parsed_data, null, 2))
+                   )) || 
+                   'No email body'}
                 </div>
               </div>
             </div>

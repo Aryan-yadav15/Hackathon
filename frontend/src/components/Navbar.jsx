@@ -34,12 +34,12 @@ export default function Navbar() {
                 <Package className="w-4 h-4 mr-2" />
                 Orders
               </NavLink>
-              <NavLink href="/retailers">
+              <NavLink href="/dashboard/retailers">
                 <Users className="w-4 h-4 mr-2" />
                 Retailers
               </NavLink>
               <NavLink href="/canvas">
-                Canvas
+                Setup
               </NavLink>
             </div>
           </div>
